@@ -1,0 +1,58 @@
+# docker build --progress=plain --no-cache -t zhangjiahaol/oraclejdk:21.0.9 -f BaseImage_oraclejdk21 .
+# docker push zhangjiahaol/oraclejdk:21.0.9
+
+# ==================== 第一阶段：构建基础环境 ====================
+FROM quay.io/centos/centos:stream9 AS builder
+
+# 1. 安装必要工具（包括wget用于下载）
+RUN dnf install -y tar gzip wget glibc-locale-source
+
+# 2. 从Oracle官网下载JDK并校验（使用已知的SHA256值）
+# 注意：Oracle可能会更改下载链接或要求认证，可能需要定期更新
+RUN wget  --header "Cookie: oraclelicense=accept-securebackup-cookie" \
+    "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz" \
+    -O /tmp/jdk-21_linux-x64_bin.tar.gz
+
+# 3. 解压JDK
+RUN tar -zxf /tmp/jdk-21_linux-x64_bin.tar.gz -C /usr/local/ ; ls -lh /usr/local/
+
+
+# ==================== 第二阶段：生产环境镜像 ====================
+FROM quay.io/centos/centos:stream9
+
+# 继承JDK并配置英国时区
+COPY --from=builder /usr/local/jdk-21.0.9 /usr/local/jdk-21.0.9
+RUN dnf install -y tzdata glibc-locale-source \
+    && dnf clean all \
+    && localedef -c -f UTF-8 -i en_GB en_GB.UTF-8 \
+    && ln -snf /usr/share/zoneinfo/Europe/London /etc/localtime \
+    && echo "Europe/London" > /etc/timezone
+
+
+# 配置环境变量
+ENV JAVA_HOME=/usr/local/jdk-21.0.9 \
+    PATH=$PATH:/usr/local/jdk-21.0.9/bin \
+    LANG=en_GB.UTF-8 \
+    LC_ALL=en_GB.UTF-8 \
+    LANGUAGE=en_GB.UTF-8
+
+
+# 创建非root用户
+RUN groupadd -g 1001 appgroup \
+    && useradd -u 1001 -g appgroup -m appuser \
+    && chown -R appuser:appgroup /usr/local/jdk-21.0.9/
+
+# 设置工作目录
+WORKDIR /app
+# 更改app应用所有权
+RUN chown -R appuser:appgroup /app
+
+# 切换非root用户
+USER appuser
+
+# 验证JDK
+RUN java -version
+
+# 不设置CMD和ENTRYPOINT，由后续应用镜像定义
+
+
