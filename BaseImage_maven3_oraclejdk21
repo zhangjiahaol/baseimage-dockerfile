@@ -1,0 +1,33 @@
+# docker build --progress=plain --no-cache -t zhangjiahaol/maven:maven_3.9.6_jdk21 ./
+# docker push zhangjiahaol/maven:maven_3.9.6_jdk21
+FROM quay.io/centos/centos:stream9 AS jdk-builder
+
+# 安装基础工具
+RUN dnf install -y wget tar gzip glibc-locale-source
+
+# 复制本地Oracle JDK安装包（需提前下载）
+RUN wget  --header "Cookie: oraclelicense=accept-securebackup-cookie"     "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz"     -O /tmp/jdk-21_linux-x64_bin.tar.gz
+
+# 解压JDK
+RUN tar -zxf /tmp/jdk-21_linux-x64_bin.tar.gz -C /usr/local/ ; ls -lh /usr/local/
+
+### 第二阶段：构建Maven+Oracle JDK镜像
+FROM maven:3.9.6-eclipse-temurin-17
+
+# 移除基础镜像中的OpenJDK
+RUN rm -rf /opt/java/openjdk
+
+# 从第一阶段复制Oracle JDK
+COPY --from=jdk-builder /usr/local/jdk-21* /opt/java/oraclejdk
+
+# 配置环境变量
+ENV JAVA_HOME=/opt/java/oraclejdk     PATH=/opt/java/oraclejdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+
+# 验证Java版本（确保是Oracle JDK 21）
+RUN java -version
+RUN mvn -v  # 验证Maven是否正常工作
+
+# 默认命令（可被构建命令覆盖）
+CMD ["mvn", "--version"]
+
+
