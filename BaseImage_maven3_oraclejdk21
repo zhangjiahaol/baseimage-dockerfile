@@ -1,4 +1,4 @@
-# docker build --progress=plain --no-cache -t zhangjiahaol/maven:maven_3.9.6_oraclejdk21 ./
+# docker build --progress=plain --no-cache -t zhangjiahaol/maven:maven_3.9.6_oraclejdk21 -f BaseImage_maven3_oraclejdk21 ./
 # docker push zhangjiahaol/maven:maven_3.9.6_oraclejdk21
 FROM quay.io/centos/centos:stream9 AS jdk-builder
 
