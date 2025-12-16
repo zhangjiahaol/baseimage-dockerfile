@@ -1,4 +1,4 @@
-# docker build --progress=plain --no-cache -t zhangjiahaol/oraclejdk:21.0.9 -f BaseImage_oraclejdk21 ./
+## docker build --progress=plain --no-cache -t zhangjiahaol/oraclejdk:21.0.9 -f BaseImage_oraclejdk21 ./
 # docker push zhangjiahaol/oraclejdk:21.0.9
 
 # ==================== 第一阶段：构建基础环境 ====================
